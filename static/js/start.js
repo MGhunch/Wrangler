@@ -25,11 +25,11 @@ function startInit(){
 }
 
 function startTake(files){
-  const ok=files.filter(f=>/\.(pdf|jpe?g|png)$/i.test(f.name));
+  const ok=files.filter(f=>/\.(pdf|jpe?g|png|docx)$/i.test(f.name));
   if(ok.length!==files.length) robotLineAt($('startLine'), STR.start.kind);
   if(!ok.length) return;
   /* one PDF is the whole stack; images add up as pages */
-  START_FILES = ok.some(f=>/\.pdf$/i.test(f.name)) ? [ok.find(f=>/\.pdf$/i.test(f.name))] : ok;
+  START_FILES = ok.some(f=>/\.(pdf|docx)$/i.test(f.name)) ? [ok.find(f=>/\.(pdf|docx)$/i.test(f.name))] : ok;
   $('dropFiles').innerHTML = START_FILES.map(f=>`<span class="drop-f">${esc(f.name)}</span>`).join('');
   $('drop').classList.add('has');
 }

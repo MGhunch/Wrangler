@@ -3,13 +3,12 @@
    Same bones as Robot Sandwich's tokens.css, its own colour. Copied, not
    imported — no shared dependency between the two apps.
 
-   --hue is the PLACEHOLDER. Wrangler's real colour is still to be chosen;
-   change these two lines and the whole app follows.
+   --hue is Wrangler's colour. Change these two lines and the whole app follows.
    =========================================================================== */
 :root{
-  /* The colour — placeholder */
-  --hue:#2E5BFF; --hue-dark:#2247CC;
-  --tint:rgba(46,91,255,.12);
+  /* The colour — teal. Nobody's brand colour, which is the point. */
+  --hue:#0E7C7B; --hue-dark:#0B6362;
+  --tint:rgba(14,124,123,.12);
 
   /* Ink and paper */
   --ink:#1A1917; --white:#FFFFFF;

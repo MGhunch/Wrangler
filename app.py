@@ -18,6 +18,7 @@ The rule that shapes everything here: nobody edits the work. The pages are
 pictures. The only thing that ever changes is pins.json.
 """
 
+import io
 import json
 import os
 import re
@@ -25,6 +26,7 @@ import secrets
 import threading
 import time
 
+import mammoth
 import pymupdf as fitz
 from flask import Flask, abort, jsonify, request, send_from_directory
 
@@ -40,7 +42,7 @@ WORD = os.environ.get("WRANGLER_WORD", "pink unicorn")
 MAX_MB = 40
 ZOOM = 2.0        # 144dpi — sharp on a phone, still quick
 MAX_W = 1800      # px; a poster doesn't need to be a wall
-KINDS = {".pdf": "pdf", ".jpg": "jpg", ".jpeg": "jpg", ".png": "png"}
+KINDS = {".pdf": "pdf", ".jpg": "jpg", ".jpeg": "jpg", ".png": "png", ".docx": "docx"}
 
 LOCK = threading.Lock()   # pins.json is read-modify-write; one process, one lock
 
@@ -74,6 +76,37 @@ def jsave(path, obj):
     os.replace(tmp, path)
 
 
+# A Word doc is words, not a picture. It's read for its structure — headings,
+# bold, lists, tables — and poured into a clean page of our own, which is
+# what a copy doc wants anyway. Word's fonts and layout don't come across;
+# a designed layout should arrive as a PDF. Tracked changes are taken as
+# accepted; comments are ignored (for now — one day they're pins).
+DOC_CSS = """
+body{font-family:sans-serif;font-size:10.5pt;line-height:1.55;color:#1A1917}
+h1{font-size:22pt;line-height:1.15;margin:0 0 10pt} h2{font-size:15pt;line-height:1.2;margin:14pt 0 6pt}
+h3{font-size:12pt;margin:12pt 0 4pt} p{margin:0 0 8pt} li{margin:0 0 3pt}
+table{border-collapse:collapse;width:100%;margin:6pt 0 10pt}
+td,th{border:1px solid #D9D5CF;padding:5pt 7pt;vertical-align:top} th{background:#F5F3EF;text-align:left}
+"""
+PAGE = fitz.Rect(0, 0, 595, 842)           # A4
+INNER = fitz.Rect(56, 60, 595 - 56, 842 - 60)
+
+
+def docx_to_pdf(data):
+    html = mammoth.convert_to_html(io.BytesIO(data)).value
+    story = fitz.Story(html=html, user_css=DOC_CSS)
+    buf = io.BytesIO()
+    writer = fitz.DocumentWriter(buf)
+    more = 1
+    while more:
+        dev = writer.begin_page(PAGE)
+        more, _ = story.place(INNER)
+        story.draw(dev)
+        writer.end_page()
+    writer.close()
+    return buf.getvalue()
+
+
 def render(files, out):
     """Every upload becomes a stack of PNG pages. A PDF is its pages; an
     image is one page. Text comes off for free where there is any, and is
@@ -81,6 +114,8 @@ def render(files, out):
     os.makedirs(os.path.join(out, "pages"), exist_ok=True)
     pages, text, words, n = [], {}, {}, 0
     for name, kind, data in files:
+        if kind == "docx":
+            data, kind = docx_to_pdf(data), "pdf"
         doc = fitz.open(stream=data, filetype=kind)
         for page in doc:
             n += 1
