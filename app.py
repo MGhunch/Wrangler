@@ -79,7 +79,7 @@ def render(files, out):
     image is one page. Text comes off for free where there is any, and is
     kept for the robot — it never reaches the screen."""
     os.makedirs(os.path.join(out, "pages"), exist_ok=True)
-    pages, text, n = [], {}, 0
+    pages, text, words, n = [], {}, {}, 0
     for name, kind, data in files:
         doc = fitz.open(stream=data, filetype=kind)
         for page in doc:
@@ -92,8 +92,18 @@ def render(files, out):
             t = page.get_text().strip()
             if t:
                 text[str(n)] = t
+            # where every word sits, as fractions of the page, so a drag can
+            # snap to the words under it like a highlighter pen
+            W, H = max(r.width, 1.0), max(r.height, 1.0)
+            ws = []
+            for x0, y0, x1, y1, w, blk, ln, _ in page.get_text("words"):
+                if w.strip():
+                    ws.append([round((x0 - r.x0) / W, 4), round((y0 - r.y0) / H, 4),
+                               round((x1 - r.x0) / W, 4), round((y1 - r.y0) / H, 4), w, blk, ln])
+            if ws:
+                words[str(n)] = ws
         doc.close()
-    return pages, text
+    return pages, text, words
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +133,7 @@ def upload():
     out = os.path.join(DATA, rid)
     os.makedirs(out, exist_ok=True)
     try:
-        pages, text = render(files, out)
+        pages, text, words = render(files, out)
     except Exception:
         return jsonify(error="render"), 400
     if not pages:
@@ -138,6 +148,7 @@ def upload():
     }
     jsave(os.path.join(out, "review.json"), review)
     jsave(os.path.join(out, "text.json"), text)
+    jsave(os.path.join(out, "words.json"), words)
     jsave(os.path.join(out, "pins.json"), [])
     return jsonify(id=rid, url=f"/r/{rid}", pages=len(pages))
 
@@ -159,6 +170,12 @@ def review_get(rid):
         review=jload(os.path.join(d, "review.json"), {}),
         pins=jload(os.path.join(d, "pins.json"), []),
     )
+
+
+@app.route("/api/review/<rid>/words")
+def review_words(rid):
+    d = rdir(rid)
+    return jsonify(words=jload(os.path.join(d, "words.json"), {}))
 
 
 @app.route("/api/review/<rid>/page/<int:n>.png")
@@ -197,6 +214,21 @@ def clean_pin(b):
         w = h = 0
     if w > 0 and h > 0 and x + w <= 1.001 and y + h <= 1.001:
         p["w"], p["h"] = round(w, 4), round(h, 4)
+    # a highlight is a box snapped to words: the line rects it covers, and
+    # the words themselves. The quote is what the robot will read.
+    spans = b.get("spans") or []
+    ok = []
+    if isinstance(spans, list):
+        for sp in spans[:200]:
+            try:
+                sx, sy, sw, sh = (float(v) for v in sp)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= sx <= 1 and 0 <= sy <= 1 and 0 < sw <= 1 and 0 < sh <= 1:
+                ok.append([round(sx, 4), round(sy, 4), round(sw, 4), round(sh, 4)])
+    if ok:
+        p["spans"] = ok
+        p["quote"] = str(b.get("quote") or "").strip()[:1000]
     return p
 
 

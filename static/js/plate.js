@@ -10,13 +10,63 @@
    - A name is a lanyard, not a door. Asked once, at your first note.
    ===================================================================== */
 
-let RID=null, R=null, PINS=[], WHO=null, OPEN=null;
+let RID=null, R=null, PINS=[], WHO=null, OPEN=null, WORDS={};
 
 const whoLoad = () => { try{ return JSON.parse(localStorage.getItem('wr_who')||'null'); }catch(e){ return null; } };
 const whoSave = w  => { try{ localStorage.setItem('wr_who', JSON.stringify(w)); }catch(e){} };
 const isMine  = p  => !!(WHO && p.who===WHO.id);
 const initial = n  => (n||'?').trim().charAt(0).toUpperCase();
 const isBox   = p  => !!(p && p.w>0 && p.h>0);
+const hasSpans= p  => !!(p && p.spans && p.spans.length);
+/* the mark on the work: a highlight (spans), a soft area (box with no
+   words under it), or a dot (a tap). No numbers on the work — those live
+   in the margin. */
+function markHtml(p, who){
+  const pid=p.id?`data-pid="${p.id}"`:'';
+  if(hasSpans(p)) return p.spans.map(([x,y,w,h])=>
+    `<div class="hl ${who}" style="left:${x*100}%;top:${y*100}%;width:${w*100}%;height:${h*100}%" ${pid}></div>`).join('');
+  if(isBox(p)) return `<div class="hl area ${who}" style="left:${p.x*100}%;top:${p.y*100}%;width:${p.w*100}%;height:${p.h*100}%" ${pid}></div>`;
+  return `<span class="dot ${who}" style="left:${p.x*100}%;top:${p.y*100}%" ${pid}></span>`;
+}
+const markTop = p => hasSpans(p) ? p.spans[0][1] : p.y;
+const markBottom = p => hasSpans(p) ? Math.max(...p.spans.map(s=>s[1]+s[3])) : (isBox(p) ? p.y+p.h : p.y);
+
+/* SNAP: a drag across words behaves like selecting text — from the word
+   you started on to the word you let go on, whole lines in between — and
+   comes back as one rect per line, the way a highlighter pen lands. A drag
+   that starts or ends off the words (a picture, white space) falls back to
+   the words inside the box; none at all and it's a soft area. */
+function wordAt(ws, pt){
+  let best=null, bd=1e9;
+  ws.forEach((w,i)=>{
+    const [x0,y0,x1,y1]=w, lh=y1-y0, tol=lh*0.35;
+    if(pt.y<y0-tol||pt.y>y1+tol) return;
+    const dx=pt.x<x0?x0-pt.x:(pt.x>x1?pt.x-x1:0);
+    if(dx>0.02) return;
+    if(dx<bd){ bd=dx; best=i; }
+  });
+  return best;
+}
+function snap(page, a, b, r){
+  const ws=WORDS[String(page)]; if(!ws||!ws.length) return null;
+  let picked=null;
+  const i=wordAt(ws,a), j=wordAt(ws,b);
+  if(i!==null && j!==null){ const lo=Math.min(i,j), hi=Math.max(i,j); picked=ws.slice(lo,hi+1); }
+  else picked=ws.filter(([x0,y0,x1,y1])=>{ const cx=(x0+x1)/2, cy=(y0+y1)/2; return cx>=r.x&&cx<=r.x+r.w&&cy>=r.y&&cy<=r.y+r.h; });
+  if(!picked.length) return null;
+  const lines=new Map();
+  picked.forEach(w=>{ const k=w[5]+':'+w[6]; if(!lines.has(k)) lines.set(k,[]); lines.get(k).push(w); });
+  const spans=[], text=[];
+  [...lines.values()].sort((p,q)=>p[0][1]-q[0][1]).forEach(ln=>{
+    ln.sort((p,q)=>p[0]-q[0]);
+    const x0=Math.min(...ln.map(w=>w[0])), x1=Math.max(...ln.map(w=>w[2]));
+    const y0=Math.min(...ln.map(w=>w[1])), y1=Math.max(...ln.map(w=>w[3]));
+    const padY=(y1-y0)*0.12, padX=0.003;
+    spans.push([Math.max(0,x0-padX), Math.max(0,y0-padY), (x1-x0)+padX*2, (y1-y0)+padY*2]);
+    text.push(ln.map(w=>w[4]).join(' '));
+  });
+  return {spans, quote:text.join(' ')};
+}
 
 async function reviewInit(rid){
   RID=rid; WHO=whoLoad();
@@ -31,6 +81,10 @@ async function reviewInit(rid){
   document.title = (R.title||STR.name)+' — '+STR.name;
   $('who').textContent=R.title||'';
   drawPlate();
+  /* the words and where they sit — for the highlighter. Not blocking:
+     until they arrive a drag is a soft box, which is what a drag over a
+     picture is anyway. */
+  api('/api/review/'+rid+'/words').then(d=>{ WORDS=d.words||{}; }).catch(()=>{});
 }
 
 /* ---------------- the pages ---------------- */
@@ -49,8 +103,8 @@ function drawPlate(){
   drawPins(); drawRail();
 }
 
-/* what this person may see: their own pins everywhere, everyone's pins on
-   the pages where they've already had their say */
+/* what this person may see: their own marks everywhere, everyone's marks
+   on the pages where they've already had their say */
 function visiblePins(){
   const said=new Set(PINS.filter(isMine).map(p=>p.page));
   return PINS.filter(p=>isMine(p)||said.has(p.page));
@@ -61,18 +115,23 @@ function drawPins(){
   const seen=visiblePins();
   document.querySelectorAll('.page').forEach(pg=>{
     const n=+pg.dataset.n, box=pg.querySelector('.pins');
-    box.innerHTML=seen.filter(p=>p.page===n).map(p=>{
-      const who=isMine(p)?'mine':'them', label=isMine(p)?myNumber(p):esc(initial(p.name));
-      if(isBox(p)) return `
-        <div class="box ${who}" style="left:${p.x*100}%;top:${p.y*100}%;width:${p.w*100}%;height:${p.h*100}%" data-pid="${p.id}">
-          <span class="pin corner ${who}" aria-label="${esc(p.name)}">${label}</span></div>`;
-      return `<button class="pin ${who}" style="left:${p.x*100}%;top:${p.y*100}%" data-pid="${p.id}" aria-label="${esc(p.name)}">${label}</button>`;
-    }).join('');
+    const here=seen.filter(p=>p.page===n);
+    box.innerHTML=here.map(p=>markHtml(p, isMine(p)?'mine':'them')).join('');
+    /* the tags in the margin: one per note, at the note's height, nudged
+       apart when two would sit on each other */
+    let last=-1; const tags=[];
+    here.map(p=>({p, y:markTop(p)})).sort((a,b)=>a.y-b.y).forEach(t=>{
+      const H=pg.getBoundingClientRect().height||1000, min=30/H;
+      const y=Math.max(t.y, last+min); last=y;
+      const who=isMine(t.p)?'mine':'them', label=isMine(t.p)?myNumber(t.p):esc(initial(t.p.name));
+      tags.push(`<button class="tag ${who}" style="top:${y*100}%" data-pid="${t.p.id}" aria-label="${esc(t.p.name)}">${label}</button>`);
+    });
+    box.insertAdjacentHTML('beforeend', tags.join(''));
     box.querySelectorAll('[data-pid]').forEach(b=>b.addEventListener('click', e=>{
-      e.stopPropagation(); const p=PINS.find(q=>q.id===b.dataset.pid); if(p) noteOpen({page:p.page,x:p.x,y:p.y,w:p.w,h:p.h,pin:p});
+      e.stopPropagation(); const p=PINS.find(q=>q.id===b.dataset.pid); if(p) noteOpen(Object.assign({pin:p}, p));
     }));
   });
-  $('hello').hidden = PINS.some(isMine);
+  $('hello').classList.toggle('gone', PINS.some(isMine));   // fades, keeps its space — no page jump
 }
 
 /* ---------------- the tap, or the drag ----------------
@@ -95,7 +154,7 @@ function pageMove(e){
   if(!DRAG.moved){
     if(Math.hypot(e.clientX-DRAG.sx, e.clientY-DRAG.sy)<DRAG_MIN) return;
     DRAG.moved=true; noteClose();
-    DRAG.ghost=document.createElement('div'); DRAG.ghost.className='box mine ghost';
+    DRAG.ghost=document.createElement('div'); DRAG.ghost.className='hl area mine ghost';
     DRAG.pg.querySelector('.pins').appendChild(DRAG.ghost);
     try{ DRAG.pg.setPointerCapture(e.pointerId); }catch(x){}
   }
@@ -111,9 +170,10 @@ function pageUp(e){
     if(OPEN){ noteClose(); return; }                   // a tap outside an open note just closes it
     noteOpen({page:+d.pg.dataset.n, x:d.a.x, y:d.a.y}); return;
   }
-  const r=boxFrom(d.a, pageFrac(d.pg,e));
-  if(r.w<0.01||r.h<0.01){ noteOpen({page:+d.pg.dataset.n, x:d.a.x, y:d.a.y}); return; }
-  noteOpen({page:+d.pg.dataset.n, x:r.x, y:r.y, w:r.w, h:r.h});
+  const r=boxFrom(d.a, pageFrac(d.pg,e)), page=+d.pg.dataset.n;
+  if(r.w<0.01||r.h<0.01){ noteOpen({page, x:d.a.x, y:d.a.y}); return; }
+  const sn=snap(page, d.a, pageFrac(d.pg,e), r);
+  noteOpen(Object.assign({page, x:r.x, y:r.y, w:r.w, h:r.h}, sn||{}));
 }
 function pageCancel(){ if(DRAG&&DRAG.ghost) DRAG.ghost.remove(); DRAG=null; }
 const boxFrom=(a,b)=>({x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(b.x-a.x), h:Math.abs(b.y-a.y)});
@@ -126,13 +186,10 @@ function noteOpen(o){
   const pg=document.querySelector(`.page[data-n="${o.page}"]`); if(!pg) return;
   const S=STR.review, mine=o.pin?isMine(o.pin):true, fresh=!o.pin;
   const el=document.createElement('div');
-  const box=isBox(o), ax=box?o.x:o.x, ay=box?o.y+o.h:o.y;   // a note hangs off a box's bottom-left
-  el.className='note'+(ax>0.55?' flip-x':'')+(ay>0.7?' flip-y':'')+(mine?' mine':' them')+(box?' onbox':'');
+  const ax=hasSpans(o)?o.spans[0][0]:o.x, ay=markBottom(o);   // a note hangs under the mark
+  el.className='note'+(ax>0.55?' flip-x':'')+(ay>0.7?' flip-y':'')+(mine?' mine':' them')+(isBox(o)||hasSpans(o)?' onbox':'');
   el.style.setProperty('--px',(ax*100)+'%'); el.style.setProperty('--py',(ay*100)+'%');
-  const n=PINS.filter(isMine).length+1;
-  const ghost = !fresh ? '' : box
-    ? `<div class="box mine ghost" style="left:${o.x*100}%;top:${o.y*100}%;width:${o.w*100}%;height:${o.h*100}%"><span class="pin corner mine">${n}</span></div>`
-    : `<span class="pin mine ghost" style="left:${o.x*100}%;top:${o.y*100}%">${n}</span>`;
+  const ghost = fresh ? `<div class="ghost-wrap">${markHtml(o,'mine')}</div>` : '';
   if(mine){
     el.innerHTML=`
       ${!WHO?`<input type="text" class="note-who" id="noteWho" maxlength="40" placeholder="${esc(S.who)}" autocomplete="given-name">`:''}
@@ -144,11 +201,12 @@ function noteOpen(o){
         <button class="note-save" id="noteSave">${esc(S.save)}</button>
       </div>`;
   }else{
-    el.innerHTML=`<div class="note-h">${esc(o.pin.name)}</div><div class="note-said">${esc(o.pin.text)}</div>`;
+    el.innerHTML=`<div class="note-h">${esc(o.pin.name)}</div>${o.pin.quote?`<div class="note-q">${esc(o.pin.quote)}</div>`:''}<div class="note-said">${esc(o.pin.text)}</div>`;
   }
   pg.appendChild(el);
-  if(ghost){ const g=document.createElement('div'); g.innerHTML=ghost; pg.querySelector('.pins').appendChild(g.firstElementChild); }
-  OPEN={el, page:o.page, x:o.x, y:o.y, w:o.w||0, h:o.h||0, pin:o.pin||null};
+  if(ghost){ pg.querySelector('.pins').insertAdjacentHTML('beforeend', ghost); }
+  pg.querySelectorAll('[data-pid]').forEach(m=>m.classList.toggle('lit', !!(o.pin&&m.dataset.pid===o.pin.id)));
+  OPEN={el, page:o.page, x:o.x, y:o.y, w:o.w||0, h:o.h||0, spans:o.spans||null, quote:o.quote||'', pin:o.pin||null};
   if(mine){
     $('noteSave').addEventListener('click', noteSave);
     $('noteCancel').addEventListener('click', noteClose);
@@ -164,7 +222,7 @@ function noteOpen(o){
 }
 function noteClose(){
   if(!OPEN) return;
-  OPEN.el.remove(); document.querySelectorAll('.pin.ghost,.box.ghost').forEach(g=>g.remove()); OPEN=null;
+  OPEN.el.remove(); document.querySelectorAll('.ghost-wrap,.hl.ghost').forEach(g=>g.remove()); document.querySelectorAll('.lit').forEach(m=>m.classList.remove('lit')); OPEN=null;
 }
 
 async function noteSave(){
@@ -176,7 +234,7 @@ async function noteSave(){
     WHO={id:Math.random().toString(36).slice(2,12)+Date.now().toString(36), name}; whoSave(WHO);
   }
   if(!text){ $('noteT').focus(); return; }
-  const body={page:OPEN.page, x:OPEN.x, y:OPEN.y, w:OPEN.w, h:OPEN.h, text, who:WHO};
+  const body={page:OPEN.page, x:OPEN.x, y:OPEN.y, w:OPEN.w, h:OPEN.h, spans:OPEN.spans, quote:OPEN.quote, text, who:WHO};
   if(OPEN.pin) body.id=OPEN.pin.id;
   const btn=$('noteSave'); btn.disabled=true;
   try{
@@ -201,18 +259,18 @@ async function pinBin(p){
    Desktop only (CSS hides it narrow). Every note this person may see,
    in page order; a click goes to the pin and opens it. */
 function drawRail(){
-  const S=STR.review, list=$('railList'), seen=visiblePins().slice().sort((a,b)=>a.page-b.page||a.y-b.y);
+  const S=STR.review, list=$('railList'), seen=visiblePins().slice().sort((a,b)=>a.page-b.page||markTop(a)-markTop(b));
   if(!seen.length){ list.innerHTML=`<div class="rail-empty">${esc(S.none)}</div>`; }
   else list.innerHTML=seen.map(p=>`
     <button class="rnote ${isMine(p)?'mine':'them'}" data-pid="${p.id}">
       <span class="rnote-h"><b>${isMine(p)?myNumber(p):esc(initial(p.name))}</b> ${esc(p.name)} · ${esc(S.page)} ${p.page}</span>
-      <span class="rnote-t">${esc(p.text)}</span>
+      ${p.quote?`<span class="rnote-q">${esc(p.quote)}</span>`:''}<span class="rnote-t">${esc(p.text)}</span>
     </button>`).join('');
   list.querySelectorAll('.rnote').forEach(b=>b.addEventListener('click', ()=>{
     const p=PINS.find(q=>q.id===b.dataset.pid); if(!p) return;
-    const pin=document.querySelector(`.pin[data-pid="${p.id}"]`);
-    if(pin) pin.scrollIntoView({block:'center', behavior:'smooth'});
-    setTimeout(()=>noteOpen({page:p.page,x:p.x,y:p.y,pin:p}), 350);
+    const m=document.querySelector(`.tag[data-pid="${p.id}"]`);
+    if(m) m.scrollIntoView({block:'center', behavior:'smooth'});
+    setTimeout(()=>noteOpen(Object.assign({pin:p}, p)), 350);
   }));
   $('railNote').textContent = PINS.some(isMine) ? '' : S.others;
 }
