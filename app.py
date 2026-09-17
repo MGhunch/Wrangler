@@ -188,8 +188,16 @@ def clean_pin(b):
     name = str(who.get("name") or "").strip()[:40]
     if not text or not wid or not name:
         return None
-    return {"page": page, "x": round(x, 4), "y": round(y, 4), "text": text,
-            "who": wid, "name": name}
+    p = {"page": page, "x": round(x, 4), "y": round(y, 4), "text": text,
+         "who": wid, "name": name}
+    # a box is a pin with a size; it may not spill off the page
+    try:
+        w, h = float(b.get("w") or 0), float(b.get("h") or 0)
+    except (TypeError, ValueError):
+        w = h = 0
+    if w > 0 and h > 0 and x + w <= 1.001 and y + h <= 1.001:
+        p["w"], p["h"] = round(w, 4), round(h, 4)
+    return p
 
 
 @app.route("/api/review/<rid>/pin", methods=["POST"])
@@ -210,7 +218,7 @@ def pin_save(rid):
             # an edit — only of your own
             for q in pins:
                 if q["id"] == pid and q["who"] == p["who"]:
-                    q["text"] = p["text"]
+                    q["text"] = p["text"]          # words change; the spot doesn't
                     q["edited"] = int(time.time())
                     jsave(path, pins)
                     return jsonify(pin=q)
