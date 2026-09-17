@@ -1,0 +1,196 @@
+/* WRANGLER — styles. tokens.css holds the variables.
+   The chrome (topbar, burger, menu, line, face) is Robot Sandwich's, with
+   --hue where Robot has red. Everything under THE PLATE is Wrangler's own. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;
+  font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important}
+body{font-family:var(--body);color:var(--ink);background:#fff;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;font-weight:300;line-height:1.6}
+.beb{font-family:var(--display);letter-spacing:0;line-height:.95}
+button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--hue);outline-offset:2px}
+.burger:focus-visible,.menu-x:focus-visible{outline:2px solid var(--border);outline-offset:0}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+[hidden]{display:none!important}
+
+/* ---------------- the chrome ---------------- */
+.topbar{background:#fff;padding:11px var(--g);display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:50}
+.mark{font-size:26px;color:var(--ink);text-decoration:none;letter-spacing:1px}
+.mark:hover{color:var(--hue)}
+.who{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);font-weight:600;
+  max-width:50vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-r{display:flex;align-items:center;gap:12px}
+.burger{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;transition:background .15s}
+.burger:hover{background:var(--paper)}
+.burger svg{width:19px;height:19px;display:block}
+.burger line{stroke:var(--ink);stroke-width:2;stroke-linecap:round;transition:transform .2s ease,opacity .2s ease}
+.burger.x .bl1{transform:translateY(4.5px) rotate(45deg);transform-origin:center}
+.burger.x .bl2{opacity:0}
+.burger.x .bl3{transform:translateY(-4.5px) rotate(-45deg);transform-origin:center}
+.menu-menu{position:fixed;top:54px;right:14px;background:#fff;border:1px solid var(--border);
+  border-radius:14px;padding:6px;min-width:148px;box-shadow:0 10px 30px rgba(26,25,23,.14);display:none;z-index:60}
+.menu-menu.on{display:block}
+.menu-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border-radius:9px;
+  font-family:var(--display);font-size:16px;letter-spacing:1.2px}
+.menu-menu button:hover{background:var(--paper);color:var(--hue)}
+.menu-shade{position:fixed;inset:0;background:rgba(26,25,23,.68);display:none;
+  align-items:center;justify-content:center;z-index:70;padding:20px}
+.menu-shade.on{display:flex}
+.menu-card{background:var(--paper);border-radius:var(--r-lg);width:100%;max-width:560px;
+  max-height:min(84vh,700px);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 60px -12px rgba(0,0,0,.6);text-align:left}
+.menu-head{display:flex;align-items:center;justify-content:space-between;padding:26px 22px 16px 30px;border-bottom:1px solid var(--border)}
+.menu-title{font-family:var(--display);font-size:40px;letter-spacing:1px;line-height:.95}
+.menu-x{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}
+.menu-x:hover{background:#fff}
+.menu-x svg{width:15px;height:15px}
+.menu-x line{stroke:var(--hue);stroke-width:2.4;stroke-linecap:round}
+.menu-body{padding:24px 30px 30px;overflow-y:auto}
+.menu-body.hiw p{font-size:15px;line-height:1.6;margin-bottom:11px;max-width:50ch;font-weight:400}
+.menu-body.hiw p:last-child{margin-bottom:0}
+@media(max-width:600px){.menu-head{padding:22px 16px 14px 22px}.menu-title{font-size:34px}.menu-body{padding:20px 22px 24px}}
+
+/* the face on its disc — the constant */
+.botdisc{width:27px;height:27px;border-radius:50%;background:var(--hue);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.botdisc svg{width:19px;height:19px;display:block;overflow:visible}
+
+/* the line — something failed, the room stands */
+.line{display:flex;align-items:center;gap:11px;background:var(--tint);border-left:3px solid var(--hue);
+  color:var(--hue);font-weight:500;font-size:14.5px;line-height:1.35;
+  padding:9px 14px 9px 11px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin:0 0 14px;
+  animation:line-in .28s ease-out both;transition:opacity .28s ease}
+.line.out{opacity:0}
+@keyframes line-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+.cta{display:inline-flex;align-items:center;justify-content:center;background:var(--hue);color:#fff;
+  font-family:var(--display);font-size:18px;letter-spacing:1.5px;padding:12px 26px;border-radius:var(--pill);
+  text-decoration:none;transition:background .15s}
+.cta:hover{background:var(--hue-dark)}
+.cta:disabled{opacity:.6;cursor:default}
+.cta.ghost{background:transparent;color:var(--hue);border:2px solid var(--hue);padding:10px 24px}
+.cta.ghost:hover{background:var(--tint)}
+
+.foot{margin-top:auto;padding:22px var(--g);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--mid);font-weight:600;text-align:center}
+
+/* ---------------- START ---------------- */
+#start{flex:1;display:flex;justify-content:center;padding:48px var(--g)}
+.start-wrap{width:100%;max-width:520px}
+.start-title{font-size:56px;margin-bottom:26px}
+.fld{display:block;margin-bottom:18px}
+.fld-l{display:block;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);font-weight:600;margin-bottom:7px}
+.fld input{width:100%;font:inherit;font-weight:400;font-size:16px;padding:12px 16px;border:1px solid var(--border);
+  border-radius:var(--r-md);background:#fff;color:var(--ink)}
+.fld input:focus{border-color:var(--hue);outline:none}
+.drop{position:relative;border:2px dashed var(--border);border-radius:var(--r-lg);padding:34px 20px;text-align:center;
+  margin-bottom:18px;cursor:pointer;transition:border-color .15s,background .15s;background:var(--paper)}
+.drop:hover,.drop.over{border-color:var(--hue);background:var(--tint)}
+.drop.has{border-style:solid;border-color:var(--hue)}
+.drop input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.drop-t{font-family:var(--display);font-size:26px;letter-spacing:1px}
+.drop-d{font-size:12.5px;color:var(--mid);margin-top:4px}
+.drop-files{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.drop-f{background:#fff;border:1px solid var(--border);border-radius:var(--pill);padding:4px 12px;font-size:12.5px;font-weight:500}
+.made-say{font-size:17px;font-weight:400;line-height:1.5;margin-bottom:16px}
+.made-link input{width:100%;font:inherit;font-size:14px;font-weight:500;padding:12px 16px;border:1px solid var(--border);
+  border-radius:var(--r-md);background:var(--paper);color:var(--ink);margin-bottom:14px}
+.made-row{display:flex;gap:10px;flex-wrap:wrap}
+.again{margin-top:26px;font-size:13px;color:var(--mid);text-decoration:underline}
+.again:hover{color:var(--hue)}
+
+/* ---------------- THE PLATE ---------------- */
+#review{flex:1;display:flex;flex-direction:column;background:var(--paper)}
+.hello{display:flex;align-items:center;gap:11px;justify-content:center;padding:16px var(--g) 0;
+  font-size:14.5px;font-weight:400;color:var(--ink)}
+.hello [data-face]{display:flex;width:30px;height:30px;border-radius:50%;background:var(--hue);
+  align-items:center;justify-content:center;flex:none;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.hello [data-face] svg{width:21px;height:21px}
+.stage{display:flex;justify-content:center;align-items:flex-start;gap:24px;padding:24px 16px 60px;width:100%}
+.plate{flex:0 1 860px;min-width:0;display:flex;flex-direction:column;gap:22px}
+.gone{padding:40px;text-align:center;color:var(--mid)}
+
+.page{position:relative;background:#fff;box-shadow:0 8px 30px rgba(26,25,23,.12);border-radius:3px;
+  cursor:crosshair;user-select:none;-webkit-user-select:none;overflow:visible}
+.page img{display:block;width:100%;height:auto;border-radius:3px;pointer-events:none}
+.pins{position:absolute;inset:0;pointer-events:none}
+.pins .pin{pointer-events:auto}
+.page-n{position:absolute;left:0;bottom:-18px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--mid);font-weight:600}
+
+/* the pin: yours wears the colour and a number; theirs wears ink and an initial */
+.pin{position:absolute;width:28px;height:28px;border-radius:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;font-family:var(--display);font-size:16px;letter-spacing:0;line-height:1;
+  border:2px solid #fff;box-shadow:0 4px 12px rgba(26,25,23,.3);cursor:pointer;transition:transform .12s;
+  animation:pin-in .22s ease-out both}
+.pin.mine{background:var(--hue);color:#fff}
+.pin.them{background:var(--ink);color:var(--paper);font-family:var(--body);font-weight:700;font-size:12px}
+.pin:hover{transform:translate(-50%,-50%) scale(1.12)}
+.pin.ghost{opacity:.55;pointer-events:none;animation:none}
+@keyframes pin-in{from{opacity:0;transform:translate(-50%,-50%) scale(.5)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+/* the note: sits by the pin, flips to stay on the page */
+.note{position:absolute;left:var(--px);top:var(--py);z-index:5;width:min(320px,86vw);background:#fff;border-radius:var(--r-lg);
+  box-shadow:0 14px 40px rgba(26,25,23,.28);padding:12px;margin:14px 0 0 -14px;cursor:auto;user-select:text;
+  -webkit-user-select:text;animation:note-in .18s ease-out both}
+.note.flip-x{transform:translateX(-100%);margin-left:14px}
+.note.flip-y{transform:translateY(-100%);margin-top:-36px}
+.note.flip-x.flip-y{transform:translate(-100%,-100%)}
+@keyframes note-in{from{opacity:0}to{opacity:1}}
+.note-who,.note-t{width:100%;font:inherit;font-size:15px;font-weight:400;line-height:1.5;padding:9px 11px;
+  border:1px solid var(--border);border-radius:var(--r-sm);background:var(--paper);color:var(--ink);resize:none}
+.note-who{margin-bottom:8px;font-weight:500}
+.note-who.miss{border-color:var(--hue)}
+.note-t:focus,.note-who:focus{outline:none;border-color:var(--hue);background:#fff}
+.note-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+.note-row .sp{flex:1}
+.note-save{background:var(--hue);color:#fff;font-family:var(--display);font-size:15px;letter-spacing:1.5px;
+  padding:7px 16px;border-radius:var(--pill)}
+.note-save:hover{background:var(--hue-dark)}
+.note-save:disabled{opacity:.6}
+.note-cancel,.note-bin{font-size:12.5px;color:var(--mid);padding:6px 8px;border-radius:var(--r-sm)}
+.note-cancel:hover,.note-bin:hover{color:var(--ink);background:var(--paper)}
+.note-bin:hover{color:var(--hue)}
+.note.them{padding:12px 14px}
+.note-h{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);font-weight:600;margin-bottom:4px}
+.note-said{font-size:14.5px;font-weight:400;line-height:1.5;white-space:pre-wrap}
+.note .line{margin:0 0 8px;font-size:13px}
+
+/* the rail — desktop only */
+.rail{flex:0 0 300px;position:sticky;top:76px;max-height:calc(100vh - 100px);display:flex;flex-direction:column;
+  background:#fff;border-radius:var(--r-lg);box-shadow:0 8px 30px rgba(26,25,23,.08);overflow:hidden}
+.rail-h{font-size:22px;letter-spacing:1px;padding:16px 18px 10px;border-bottom:1px solid var(--border)}
+.rail-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+.rail-empty{padding:16px 10px;font-size:13px;color:var(--mid)}
+.rnote{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:var(--r-sm);transition:background .12s}
+.rnote:hover{background:var(--paper)}
+.rnote-h{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--mid);font-weight:600;margin-bottom:3px}
+.rnote-h b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:11px;letter-spacing:0}
+.rnote.mine .rnote-h b{background:var(--hue);color:#fff;font-family:var(--display);font-size:12px}
+.rnote.them .rnote-h b{background:var(--ink);color:var(--paper)}
+.rnote-t{display:block;font-size:13.5px;line-height:1.45;font-weight:400;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rail-note{padding:10px 18px 14px;font-size:12px;line-height:1.5;color:var(--mid);border-top:1px solid var(--border)}
+.rail-note:empty{display:none}
+
+@media(max-width:980px){
+  .rail{display:none}
+  .stage{padding:16px 10px 50px}
+  .plate{gap:26px}
+}
+@media(max-width:600px){
+  /* on a phone the note is a sheet at the foot of the screen, not a box by
+     the pin — the ghost pin shows where it lands, the keyboard has room */
+  .note{position:fixed;left:10px;right:10px;bottom:10px;top:auto;width:auto;max-height:70vh;overflow:auto;margin:0;transform:none;z-index:65;
+    box-shadow:0 -6px 40px rgba(26,25,23,.3)}
+  .note.flip-x,.note.flip-y,.note.flip-x.flip-y{transform:none;margin:0}
+  .topbar{padding:10px 16px}
+  .mark{font-size:22px}
+  #start{padding:30px 16px}
+  .start-title{font-size:44px}
+  .hello{padding:12px 16px 0;font-size:13.5px}
+  .foot{padding:18px 16px}
+}

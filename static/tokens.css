@@ -1,0 +1,33 @@
+/* ===========================================================================
+   WRANGLER TOKENS
+   Same bones as Robot Sandwich's tokens.css, its own colour. Copied, not
+   imported — no shared dependency between the two apps.
+
+   --hue is the PLACEHOLDER. Wrangler's real colour is still to be chosen;
+   change these two lines and the whole app follows.
+   =========================================================================== */
+:root{
+  /* The colour — placeholder */
+  --hue:#2E5BFF; --hue-dark:#2247CC;
+  --tint:rgba(46,91,255,.12);
+
+  /* Ink and paper */
+  --ink:#1A1917; --white:#FFFFFF;
+  --paper:#F5F3EF; --border:#E8E5E0; --mid:#9A9590;
+
+  /* White-on-colour overlays */
+  --white-hi:rgba(255,255,255,.75);
+  --white-mid:rgba(255,255,255,.45);
+  --white-lo:rgba(255,255,255,.20);
+
+  /* Flags */
+  --yellow:#FAF06E;
+
+  /* Layout */
+  --g:32px;
+  --r-sm:8px; --r-md:12px; --r-lg:14px; --pill:100px;
+
+  /* Type */
+  --display:'Bebas Neue',Impact,sans-serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+}

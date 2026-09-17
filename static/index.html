@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WRANGLER</title>
+<meta name="description" content="Feedback from everyone, on one piece of work.">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/wrangler.css?v=1">
+<script src="/js/strings.js?v=1"></script>
+<script src="/js/chrome.js?v=1"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="mark beb" href="/" id="mark">WRANGLER</a>
+  <div class="top-r">
+    <div class="who" id="who"></div>
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" onclick="menuToggle()">
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <line class="bl1" x1="2" y1="5.5" x2="18" y2="5.5"/>
+        <line class="bl2" x1="2" y1="10" x2="18" y2="10"/>
+        <line class="bl3" x1="2" y1="14.5" x2="18" y2="14.5"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<nav class="menu-menu" id="menuBox">
+  <button onclick="menuOpen('hiw')">HOW IT WORKS</button>
+</nav>
+
+<div class="menu-shade" id="menu-hiw">
+  <div class="menu-card" role="dialog" aria-modal="true" aria-label="How it works">
+    <div class="menu-head">
+      <div class="menu-title" id="hiwTitle"></div>
+      <button class="menu-x" aria-label="Close" onclick="menuClose('hiw')">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg>
+      </button>
+    </div>
+    <div class="menu-body hiw" id="hiwBody"></div>
+  </div>
+</div>
+
+<!-- ================= START — Hunch's side ================= -->
+<section id="start" hidden>
+  <div class="start-wrap">
+    <h1 class="beb start-title" id="startTitle"></h1>
+    <div id="startForm">
+      <div id="startLine"></div>
+      <label class="fld">
+        <span class="fld-l" id="lblWhat"></span>
+        <input type="text" id="inTitle" maxlength="120" autocomplete="off">
+      </label>
+      <div class="drop" id="drop">
+        <div class="drop-t" id="dropT"></div>
+        <div class="drop-d" id="dropD"></div>
+        <div class="drop-files" id="dropFiles"></div>
+        <input type="file" id="inFiles" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple>
+      </div>
+      <label class="fld">
+        <span class="fld-l" id="lblWord"></span>
+        <input type="password" id="inWord" autocomplete="current-password">
+      </label>
+      <button class="cta" id="goBtn" onclick="startGo()"></button>
+    </div>
+    <div id="startMade" hidden>
+      <div class="made-say" id="madeSay"></div>
+      <div class="made-link"><input type="text" id="madeUrl" readonly onclick="this.select()"></div>
+      <div class="made-row">
+        <button class="cta" id="copyBtn" onclick="copyLink()"></button>
+        <a class="cta ghost" id="openBtn" target="_blank"></a>
+      </div>
+      <button class="again" id="againBtn" onclick="startAgain()"></button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE PLATE — a reviewer's side ================= -->
+<section id="review" hidden>
+  <div class="hello" id="hello"><span data-face></span><span id="helloT"></span></div>
+  <div class="stage">
+    <div class="plate" id="plate"></div>
+    <aside class="rail" id="rail">
+      <div class="rail-h beb" id="railH"></div>
+      <div class="rail-list" id="railList"></div>
+      <div class="rail-note" id="railNote"></div>
+    </aside>
+  </div>
+</section>
+
+<footer class="foot"><span id="by"></span></footer>
+
+<script src="/js/start.js?v=1"></script>
+<script src="/js/plate.js?v=1"></script>
+<script>
+ready(()=>{
+  const m = location.pathname.match(/^\/r\/([a-f0-9]{10})$/);
+  if(m){ $('review').hidden=false; reviewInit(m[1]); }
+  else { $('start').hidden=false; startInit(); }
+});
+</script>
+</body>
+</html>
